@@ -1,0 +1,42 @@
+const puppeteer = require('puppeteer');
+
+async function getFlightPrices(source, destination, date) {
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
+
+  await page.goto('https://www.google.com/flights');
+
+  await page.type('input[name="origin"]', source);
+  await page.type('input[name="destination"]', destination);
+  await page.type('input[name="date"]', date);
+
+  await page.click('button[jsname="LgbsSe"]');
+
+  await page.waitForSelector('.gws-flights-results__result-item');
+
+  const flightPrices = await page.evaluate(() => {
+    const prices = {};
+    const airlines = document.querySelectorAll('.gws-flights-results__result-item');
+
+    airlines.forEach((airline) => {
+      const name = airline.querySelector('.gws-flights-results__carriers').textContent;
+      const price = airline.querySelector('.gws-flights-results__price').textContent;
+      prices[name] = price;
+    });
+
+    return prices;
+  });
+
+  // Close the browser
+  await browser.close();
+
+  return flightPrices;
+}
+
+getFlightPrices('Delhi', 'Jaipur', '15 April 2023')
+  .then((result) => {
+    console.log(JSON.stringify(result, null, 2));
+  })
+  .catch((error) => {
+    console.error('Error:', error);
+  });
